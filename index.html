@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高数下 · 14天学习打卡计划</title>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f8fafc; --card: #fff; --text: #1e293b; --text2: #64748b;
+  --primary: #6366f1; --primary2: #818cf8; --primary-bg: #eef2ff;
+  --success: #10b981; --success-bg: #ecfdf5; --warning: #f59e0b;
+  --warning-bg: #fffbeb; --danger: #ef4444; --danger-bg: #fef2f2;
+  --border: #e2e8f0; --shadow: 0 1px 3px rgba(0,0,0,.06);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,.08);
+  --radius: 12px; --radius-sm: 8px;
+  --font: "PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,sans-serif;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+/* ===== Header ===== */
+.header {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  color: #fff; padding: 28px 32px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 16px rgba(99,102,241,.25);
+}
+.header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em; }
+.header-sub { font-size: .9rem; opacity: .85; margin-top: 2px; }
+.progress-section { display: flex; align-items: center; gap: 14px; }
+.progress-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+.progress-ring svg { transform: rotate(-90deg); }
+.progress-ring circle { fill: none; stroke-width: 5; }
+.progress-ring .bg-circle { stroke: rgba(255,255,255,.2); }
+.progress-ring .fg-circle { stroke: #fbbf24; stroke-linecap: round; transition: stroke-dashoffset .5s; }
+.progress-ring .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 700; }
+.progress-text { font-size: .88rem; }
+.progress-text strong { font-size: 1.2rem; }
+
+/* ===== Layout ===== */
+.main { max-width: 1200px; margin: 0 auto; padding: 24px 20px 40px; display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+
+/* ===== Calendar Panel ===== */
+.calendar-panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.calendar-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+.calendar-header h2 { font-size: 1.15rem; font-weight: 600; }
+.calendar-nav { display: flex; gap: 6px; }
+.calendar-nav button { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: .82rem; cursor: pointer; color: var(--text2); transition: all .15s; }
+.calendar-nav button:hover, .calendar-nav button.active { background: var(--primary-bg); color: var(--primary); border-color: var(--primary2); }
+.calendar-nav button.active { font-weight: 600; }
+
+.calendar-grid { padding: 16px 24px 20px; }
+.weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: .78rem; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+.weekdays span:first-child, .weekdays span:last-child { color: var(--primary); }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day-cell {
+  aspect-ratio: 1; border-radius: var(--radius-sm); border: 1.5px solid transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .18s; background: var(--bg); position: relative;
+  min-height: 68px;
+}
+.day-cell:hover { border-color: var(--primary2); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.day-cell.empty { background: transparent; cursor: default; pointer-events: none; }
+.day-cell.today { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.day-cell.selected { background: var(--primary-bg); border-color: var(--primary); border-width: 2px; font-weight: 600; }
+.day-cell.done { background: var(--success-bg); border-color: var(--success); }
+.day-cell.done::after { content: '✓'; position: absolute; top: 4px; right: 6px; font-size: .6rem; color: var(--success); font-weight: 700; }
+.day-cell .day-num { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.day-cell .day-date { font-size: .65rem; color: var(--text2); margin-top: 1px; }
+.day-cell .day-label { font-size: .6rem; color: var(--text2); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; padding: 0 3px; }
+.day-cell.done .day-num { color: var(--success); }
+
+.legend { display: flex; gap: 16px; padding: 0 24px 16px; font-size: .75rem; color: var(--text2); flex-wrap: wrap; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.legend .dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ===== Detail Panel ===== */
+.detail-panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; max-height: calc(100vh - 160px); position: sticky; top: 130px; }
+.detail-header { padding: 20px 24px 0; }
+.detail-header h3 { font-size: 1.1rem; font-weight: 600; }
+.detail-header .date-info { font-size: .82rem; color: var(--text2); margin-top: 4px; }
+.detail-body { padding: 16px 24px 20px; overflow-y: auto; flex: 1; }
+.detail-empty { color: var(--text2); text-align: center; padding: 40px 20px; font-size: .9rem; }
+.detail-empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+.topic-tag { display: inline-block; background: var(--primary-bg); color: var(--primary); font-size: .72rem; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin: 0 4px 6px 0; }
+.section-card { background: #f1f5f9; border-radius: var(--radius-sm); padding: 14px 16px; margin: 12px 0; }
+.section-card h4 { font-size: .88rem; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+.task-list { list-style: none; }
+.task-list li { padding: 7px 0; font-size: .85rem; display: flex; align-items: flex-start; gap: 8px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: .12s; }
+.task-list li:hover { color: var(--primary); }
+.task-list li:last-child { border-bottom: none; }
+.task-list li .check { width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 50%; flex-shrink: 0; margin-top: 2px; transition: all .15s; display: flex; align-items: center; justify-content: center; font-size: .6rem; }
+.task-list li.done .check { background: var(--success); border-color: var(--success); color: #fff; }
+.task-list li.done { color: var(--text2); text-decoration: line-through; text-decoration-color: #cbd5e1; }
+
+.detail-actions { padding: 0 24px 20px; display: flex; gap: 8px; }
+.btn { padding: 8px 16px; border-radius: 8px; font-size: .84rem; font-weight: 600; cursor: pointer; border: none; transition: all .15s; font-family: var(--font); display: flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #4f46e5; transform: translateY(-1px); }
+.btn-outline { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #059669; }
+.btn-sm { padding: 5px 10px; font-size: .78rem; border-radius: 6px; }
+
+/* ===== AI Generator ===== */
+.ai-panel { grid-column: 1 / -1; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; }
+.ai-panel h2 { font-size: 1.15rem; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.ai-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.ai-form label { display: block; font-size: .78rem; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
+.ai-form select, .ai-form input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: .85rem; font-family: var(--font); background: var(--bg); transition: .15s; }
+.ai-form select:focus, .ai-form input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-bg); }
+.prompt-output { margin-top: 16px; background: #1e293b; border-radius: var(--radius-sm); padding: 16px; position: relative; }
+.prompt-output pre { color: #e2e8f0; font-size: .82rem; white-space: pre-wrap; font-family: "SF Mono","Fira Code","Consolas",monospace; line-height: 1.7; max-height: 300px; overflow-y: auto; }
+.prompt-output .copy-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,.15); color: #fff; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: .75rem; font-family: var(--font); transition: .15s; }
+.prompt-output .copy-btn:hover { background: rgba(255,255,255,.25); }
+.copy-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 10px 24px; border-radius: 20px; font-size: .85rem; z-index: 1000; opacity: 0; transition: opacity .3s; pointer-events: none; }
+.copy-toast.show { opacity: 1; }
+
+/* ===== Stats Row ===== */
+.stats-row { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; }
+.stat-card .stat-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.stat-card .stat-val { font-size: 1.6rem; font-weight: 700; }
+.stat-card .stat-label { font-size: .78rem; color: var(--text2); margin-top: 2px; }
+
+/* ===== Modal ===== */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; padding: 28px; }
+.modal h3 { font-size: 1.2rem; margin-bottom: 16px; }
+.modal-close { float: right; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text2); padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { background: var(--bg); }
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .detail-panel { position: static; max-height: none; }
+  .ai-form { grid-template-columns: 1fr 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .header-inner { flex-direction: column; text-align: center; }
+}
+
+/* ===== TOC Modal ===== */
+.toc-list { list-style: none; }
+.toc-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .88rem; }
+.toc-list li strong { color: var(--primary); }
+.toc-list .toc-sub { padding-left: 20px; font-size: .82rem; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <h1>📐 高数下 · 14天冲刺计划</h1>
+      <p class="header-sub">从多重积分到无穷级数 · 两周拿下高数下</p>
+    </div>
+    <div class="progress-section">
+      <div class="progress-ring">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <circle class="bg-circle" cx="28" cy="28" r="24"/>
+          <circle class="fg-circle" id="progressCircle" cx="28" cy="28" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+        </svg>
+        <span class="pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-text">
+        完成 <strong id="doneCount">0</strong> / <strong>14</strong> 天<br>
+        <span style="font-size:.75rem;opacity:.8" id="currentPhase"></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Main Layout ===== -->
+<div class="main">
+
+  <!-- Calendar Panel -->
+  <section class="calendar-panel">
+    <div class="calendar-header">
+      <h2>📅 学习日历</h2>
+      <div class="calendar-nav">
+        <button onclick="resetAll()" title="重置进度">🔄 重置</button>
+        <button id="btnTOC" onclick="showTOC()">📑 全书目录</button>
+      </div>
+    </div>
+    <div class="calendar-grid">
+      <div class="weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="days" id="daysGrid"></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#eef2ff;border:1.5px solid #6366f1"></span> 未开始</span>
+      <span><span class="dot" style="background:#ecfdf5;border:1.5px solid #10b981"></span> 已完成</span>
+      <span><span class="dot" style="background:#fff;border:2px solid #6366f1"></span> 今天</span>
+      <span>💡 点击日期查看任务</span>
+    </div>
+  </section>
+
+  <!-- Detail Panel -->
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <h3 id="detailTitle">👈 点击日历中的日期</h3>
+      <p class="date-info" id="detailDate"></p>
+    </div>
+    <div class="detail-body" id="detailBody">
+      <div class="detail-empty">
+        <div class="icon">📋</div>
+        <p>点击左侧日历中的某一天<br>查看该天的学习任务和进度</p>
+      </div>
+    </div>
+    <div class="detail-actions" id="detailActions" style="display:none">
+      <button class="btn btn-success" id="btnCheckin" onclick="toggleDayDone()">✅ 完成打卡</button>
+      <button class="btn btn-outline" id="btnGenAI" onclick="genAIForDay()">🤖 AI出题</button>
+    </div>
+  </aside>
+
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">📚</div>
+      <div class="stat-val" id="statTopics">0</div>
+      <div class="stat-label">已覆盖知识点</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏰</div>
+      <div class="stat-val" id="statHours">0</div>
+      <div class="stat-label">累计学习小时</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-val" id="statStreak">0</div>
+      <div class="stat-label">连续打卡天数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-val" id="statProblems">0</div>
+      <div class="stat-label">建议做题量</div>
+    </div>
+  </div>
+
+  <!-- AI Problem Generator -->
+  <section class="ai-panel" id="aiPanel">
+    <h2>🤖 AI 智能出题</h2>
+    <div class="ai-form">
+      <div>
+        <label>选择章节</label>
+        <select id="aiChapter">
+          <option value="ch10_1">§10.1-10.2 二重积分的概念与计算</option>
+          <option value="ch10_3">§10.3 三重积分的计算</option>
+          <option value="ch10_4">§10.4 重积分的应用</option>
+          <option value="ch11_1">§11.1-11.2 曲线积分(一类/二类)</option>
+          <option value="ch11_2">§11.3-11.4 格林公式·路径无关</option>
+          <option value="ch11_3">§11.5-11.6 曲面积分(一类/二类)</option>
+          <option value="ch11_4">§11.7-11.8 高斯公式·斯托克斯公式</option>
+          <option value="ch12_1">§12.1-12.2 常数项级数·审敛法</option>
+          <option value="ch12_3">§12.3-12.5 幂级数与泰勒展开</option>
+          <option value="ch12_4">§12.6-12.8 傅里叶级数</option>
+        </select>
+      </div>
+      <div>
+        <label>难度</label>
+        <select id="aiDifficulty">
+          <option value="easy">基础 (概念与公式)</option>
+          <option value="medium" selected>中等 (考研基础题)</option>
+          <option value="hard">困难 (考研压轴题)</option>
+        </select>
+      </div>
+      <div>
+        <label>题目数量</label>
+        <input type="number" id="aiCount" value="3" min="1" max="10">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="generatePrompt()">✨ 生成Prompt</button>
+      </div>
+    </div>
+    <div class="prompt-output" id="promptOutput" style="display:none">
+      <button class="copy-btn" onclick="copyPrompt()">📋 复制</button>
+      <pre id="promptText"></pre>
+    </div>
+  </section>
+
+</div>
+
+<!-- TOC Modal -->
+<div class="modal-overlay" id="tocOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeTOC()">✕</button>
+    <h3>📑 高数下册 · 完整目录 (同济版)</h3>
+    <p style="color:var(--text2);font-size:.85rem;margin-bottom:16px">灰色标注为前置章节，本次14天计划从第十章开始</p>
+    <ul class="toc-list" id="tocList"></ul>
+  </div>
+</div>
+
+<div class="copy-toast" id="copyToast">✅ 已复制到剪贴板！</div>
+
+<script>
+/* ================================================================
+   学习计划数据
+   ================================================================ */
+const STUDY_PLAN = [
+  {
+    day: 1,
+    title: '二重积分的概念与计算（直角坐标）',
+    chapter: '第十章 重积分',
+    sections: ['§10.1 二重积分的概念与性质', '§10.2 二重积分的计算法（直角坐标）'],
+    tasks: [
+      '精读教材 §10.1，理解二重积分的定义（分割、近似、求和、取极限）',
+      '掌握二重积分的几何意义与基本性质（线性性、区域可加性、保号性）',
+      '精读 §10.2，掌握X型和Y型区域的直角坐标计算方法',
+      '完成习题10-1: 第2, 3, 4题（概念与性质）',
+      '完成习题10-2: 第1(1)(3), 2(2)(4), 4, 5题（直角坐标计算）',
+      '🔑 重点：画积分区域草图→确定积分次序→确定上下限'
+    ],
+    hours: 3.5,
+    problemCount: 8,
+    aiPrompt: '请出3道二重积分（直角坐标计算）的题目：1道基础（画区域+交换积分次序），1道中等（含参数的计算），1道较难（需要分割积分区域）。每道题附带详细解答。'
+  },
+  {
+    day: 2,
+    title: '极坐标二重积分 + 三重积分（直角坐标）',
+    chapter: '第十章 重积分',
+    sections: ['§10.2 极坐标计算二重积分', '§10.3 三重积分概念与直角坐标计算'],
+    tasks: [
+      '掌握极坐标变换：x=r·cosθ, y=r·sinθ, dxdy=r·dr·dθ',
+      '判断何时用极坐标：被积函数含 x²+y²，积分区域为圆/扇形/环形',
+      '完成习题10-2: 第6(1)(2), 7, 8题（极坐标计算）',
+      '精读 §10.3，理解三重积分的定义与直角坐标计算（投影法）',
+      '完成习题10-3: 第1(1)(2), 2题（直角坐标三重积分）',
+      '🔑 重点：直角坐标三重积分→先一后二(投影法) 与 先二后一(截面法)'
+    ],
+    hours: 3.5,
+    problemCount: 9,
+    aiPrompt: '请出4道重积分计算题：1道极坐标二重积分（圆域），1道极坐标二重积分（需确定θ范围），1道直角坐标三重积分（投影法），1道直角坐标三重积分（截面法）。每道附带详细步骤。'
+  },
+  {
+    day: 3,
+    title: '三重积分（柱面/球面坐标）+ 重积分应用',
+    chapter: '第十章 重积分',
+    sections: ['§10.3 柱面坐标与球面坐标', '§10.4 重积分的应用'],
+    tasks: [
+      '掌握柱面坐标：x=r·cosθ, y=r·sinθ, z=z, dV=r·dr·dθ·dz',
+      '掌握球面坐标：x=ρ·sinφ·cosθ, y=ρ·sinφ·sinθ, z=ρ·cosφ, dV=ρ²·sinφ·dρ·dφ·dθ',
+      '完成习题10-3: 第3, 4, 5题（柱面/球面坐标）',
+      '精读 §10.4：曲面面积公式、质心、转动惯量',
+      '完成习题10-4: 第1, 2题（几何应用）',
+      '🔑 重点：何时用球面坐标→被积函数含x²+y²+z²，区域为球/锥体'
+    ],
+    hours: 3.5,
+    problemCount: 8,
+    aiPrompt: '请出4道题：1道用柱面坐标计算三重积分，1道用球面坐标计算三重积分，1道求曲面面积，1道重积分物理应用题（质心或转动惯量）。附带详细解答。'
+  },
+  {
+    day: 4,
+    title: '对弧长的曲线积分 + 对坐标的曲线积分',
+    chapter: '第十一章 曲线积分与曲面积分',
+    sections: ['§11.1 对弧长的曲线积分', '§11.2 对坐标的曲线积分'],
+    tasks: [
+      '理解第一类曲线积分（对弧长）：∫_L f(x,y)ds → 化为定积分',
+      '掌握参数方程下弧长积分的计算：ds = √(x\'(t)²+y\'(t)²) dt',
+      '理解第二类曲线积分（对坐标）：∫_L Pdx + Qdy → 有方向性',
+      '完成习题11-1: 第1(1)(2), 2题（弧长积分）',
+      '完成习题11-2: 第1(1)(2), 2, 3题（对坐标积分）',
+      '🔑 重点：两类曲线积分的区别——一类无方向，二类有方向'
+    ],
+    hours: 3,
+    problemCount: 8,
+    aiPrompt: '请出4道曲线积分题：1道一段弧长的曲线积分（参数方程），1道对坐标的曲线积分（参数方程），1道需要选择参数方程的弧长积分，1道两类曲线积分的对比题。附带详细解答。'
+  },
+  {
+    day: 5,
+    title: '格林公式及其应用 + 积分与路径无关',
+    chapter: '第十一章 曲线积分与曲面积分',
+    sections: ['§11.3 格林公式', '§11.4 曲线积分与路径无关的条件'],
+    tasks: [
+      '掌握格林公式：∮_L Pdx+Qdy = ∬_D (∂Q/∂x - ∂P/∂y) dxdy',
+      '理解正向边界（沿边界走，区域在左边）',
+      '掌握积分与路径无关的等价条件：∂P/∂y = ∂Q/∂x',
+      '完成习题11-3: 第1, 2, 3题（格林公式应用）',
+      '完成习题11-4: 第1, 2题（路径无关条件）',
+      '🔑 重点：格林公式把闭曲线积分转化为二重积分（降维思想）'
+    ],
+    hours: 3,
+    problemCount: 7,
+    aiPrompt: '请出4道题：1道用格林公式计算闭曲线积分，1道补线后用格林公式（非闭曲线），1道验证路径无关并求原函数，1道利用路径无关选择简便路径计算。附带详细解答。'
+  },
+  {
+    day: 6,
+    title: '对面积的曲面积分 + 对坐标的曲面积分',
+    chapter: '第十一章 曲线积分与曲面积分',
+    sections: ['§11.5 对面积的曲面积分', '§11.6 对坐标的曲面积分'],
+    tasks: [
+      '理解第一类曲面积分（对面积）：∬_Σ f(x,y,z)dS → 投影到坐标面',
+      '掌握 dS = √(1+z_x²+z_y²) dxdy（投影到xOy面）',
+      '理解第二类曲面积分：∬_Σ P·dydz+Q·dzdx+R·dxdy → 有侧',
+      '完成习题11-5: 第1, 2题（面积积分）',
+      '完成习题11-6: 第1, 2, 3题（对坐标积分）',
+      '🔑 重点：曲面分上侧/下侧→二类曲面积分符号变化'
+    ],
+    hours: 3.5,
+    problemCount: 7,
+    aiPrompt: '请出4道曲面积分题：1道对面积的曲面积分（投影到xOy），1道对坐标的曲面积分（指定侧），1道两类曲面积分的转换，1道综合题（含参数方程曲面）。附带详细解答。'
+  },
+  {
+    day: 7,
+    title: '高斯公式与斯托克斯公式 + 阶段复习',
+    chapter: '第十一章 曲线积分与曲面积分',
+    sections: ['§11.7 高斯公式', '§11.8 斯托克斯公式', '第十一章综合复习'],
+    tasks: [
+      '掌握高斯公式（散度定理）：∯_Σ Pdydz+Qdzdx+Rdxdy = ∭_Ω (∂P/∂x+∂Q/∂y+∂R/∂z) dV',
+      '掌握斯托克斯公式：∮_L Pdx+Qdy+Rdz = ∬_Σ (curl)·n dS',
+      '理解散度 div F 和旋度 rot F 的物理意义',
+      '完成习题11-7: 第1, 2题（高斯公式）',
+      '完成习题11-8: 第1题（斯托克斯公式）',
+      '📝 制作第十一章思维导图：理清格林→高斯→斯托克斯三者的联系',
+      '🔑 重点：三大公式本质都是牛顿-莱布尼兹公式在高维的推广'
+    ],
+    hours: 3.5,
+    problemCount: 6,
+    aiPrompt: '请出4道综合题：1道用高斯公式计算闭曲面积分，1道补面后用高斯公式，1道用斯托克斯公式计算空间闭曲线积分，1道散度旋度的概念综合题。附带详细解答。'
+  },
+  {
+    day: 8,
+    title: '常数项级数的概念与审敛法（一）',
+    chapter: '第十二章 无穷级数',
+    sections: ['§12.1 常数项级数的概念与性质', '§12.2 审敛法（一）'],
+    tasks: [
+      '理解级数收敛的定义：部分和数列S_n有极限',
+      '记住几个重要级数：几何级数、p-级数、调和级数',
+      '掌握正项级数审敛法：比较判别法（极限形式）、比值判别法',
+      '完成习题12-1: 第2, 3, 4题（概念与性质）',
+      '完成习题12-2: 第1(1-6), 2(1-4)题（比较+比值法）',
+      '🔑 重点：比较判别法的极限形式（找已知级数做参照）'
+    ],
+    hours: 3,
+    problemCount: 10,
+    aiPrompt: '请出5道常数项级数审敛题：1道几何级数，1道p-级数判断，1道用比较判别法（极限形式），1道用比值判别法，1道用根值判别法。每道附带详细判定过程。'
+  },
+  {
+    day: 9,
+    title: '审敛法（二）+ 幂级数的收敛半径与收敛域',
+    chapter: '第十二章 无穷级数',
+    sections: ['§12.2 审敛法（二）', '§12.3 幂级数'],
+    tasks: [
+      '掌握交错级数的莱布尼茨判别法',
+      '理解绝对收敛与条件收敛的区别',
+      '掌握幂级数收敛半径的求法（比值法/根值法）',
+      '完成习题12-2: 第3, 4, 5题（交错级数+绝对收敛）',
+      '完成习题12-3: 第1(1-6), 2题（收敛半径与收敛域）',
+      '🔑 重点：收敛区间端点处的敛散性需要单独判断'
+    ],
+    hours: 3,
+    problemCount: 10,
+    aiPrompt: '请出5道题：1道交错级数审敛，1道绝对收敛vs条件收敛判断，1道求幂级数收敛半径，1道求收敛域（含端点判断），1道幂级数和函数。附带详细解答。'
+  },
+  {
+    day: 10,
+    title: '函数展开成幂级数 + 幂级数应用',
+    chapter: '第十二章 无穷级数',
+    sections: ['§12.4 函数展开成幂级数', '§12.5 幂级数的应用'],
+    tasks: [
+      '记住关键展开式：eˣ, sinx, cosx, ln(1+x), (1+x)^α 的麦克劳林级数',
+      '掌握间接展开法（利用已知展开式代换）',
+      '了解幂级数在近似计算和微分方程中的应用',
+      '完成习题12-4: 第1(1-4), 2, 3题（函数展开）',
+      '完成习题12-5: 第1, 2题（应用）',
+      '🔑 重点：间接展开法——通过变量替换、逐项求导/积分'
+    ],
+    hours: 3,
+    problemCount: 8,
+    aiPrompt: '请出4道题：1道直接用麦克劳林公式展开，1道间接展开（变量代换），1道用逐项求导法展开，1道用幂级数求近似值（误差估计）。附带详细解答。'
+  },
+  {
+    day: 11,
+    title: '傅里叶级数（周期函数展开）',
+    chapter: '第十二章 无穷级数',
+    sections: ['§12.6 傅里叶级数', '§12.7 正弦级数与余弦级数'],
+    tasks: [
+      '理解傅里叶级数：将周期函数展开为三角级数',
+      '掌握傅里叶系数 a0, an, bn 的计算公式',
+      '理解狄利克雷收敛定理（间断点处的收敛情况）',
+      '掌握奇函数/偶函数的傅里叶级数简化',
+      '完成习题12-6: 第1, 2, 3题（基本展开）',
+      '完成习题12-7: 第1(1)(2)题（正弦/余弦级数）',
+      '🔑 重点：利用奇偶性简化计算——奇函数只有sin项，偶函数只有cos项'
+    ],
+    hours: 3.5,
+    problemCount: 7,
+    aiPrompt: '请出4道傅里叶级数题：1道基本周期函数的傅里叶展开，1道奇函数的正弦级数展开，1道偶函数的余弦级数展开，1道含间断点的展开（讨论收敛情况）。附带详细解答。'
+  },
+  {
+    day: 12,
+    title: '一般周期傅里叶级数 + 无穷级数总结',
+    chapter: '第十二章 无穷级数',
+    sections: ['§12.8 一般周期的傅里叶级数', '第十二章综合复习'],
+    tasks: [
+      '掌握一般周期为2l的函数傅里叶展开（变量代换）',
+      '完成习题12-8: 第1, 2题（一般周期展开）',
+      '📝 制作第十二章思维导图：常数项级数→幂级数→傅里叶级数',
+      '整理各审敛法的适用条件和使用顺序（比较→比值→根值→莱布尼茨）',
+      '总结关键函数的麦克劳林展开式（至少记住5个）',
+      '🔑 重点：一般周期T=2l → 通过 x\'=πx/l 变换为标准周期2π'
+    ],
+    hours: 3,
+    problemCount: 6,
+    aiPrompt: '请出4道题：1道一般周期函数的傅里叶展开（T≠2π），1道利用傅里叶级数求和，1道综合审敛法选择题，1道幂级数综合题。附带详细解答。'
+  },
+  {
+    day: 13,
+    title: '综合复习（一）：重积分与曲线曲面积分',
+    chapter: '综合复习',
+    sections: ['第十章 重积分', '第十一章 曲线积分与曲面积分'],
+    tasks: [
+      '重新做一遍所有错题（第1-7天的错题）',
+      '完成一套综合测试题（重积分+曲线曲面积分，限时2小时）',
+      '重点复习：格林公式↔高斯公式↔斯托克斯公式之间的联系',
+      '完成课后总习题中第10-11章的选做题',
+      '整理公式卡片：坐标变换、积分公式、三大定理',
+      '🔑 重点：选择合适的坐标系→二重(直角/极)、三重(直角/柱面/球面)'
+    ],
+    hours: 4,
+    problemCount: 10,
+    aiPrompt: '请出一套综合测试卷（重积分+曲线曲面积分部分，共5道大题）：1道二/三重积分计算，1道格林公式应用，1道曲面积分，1道高斯公式应用，1道综合证明题。限时2小时。附带详细答案。'
+  },
+  {
+    day: 14,
+    title: '综合复习（二）：无穷级数 + 全书总复习',
+    chapter: '综合复习',
+    sections: ['第十二章 无穷级数', '全书总结'],
+    tasks: [
+      '重新做一遍第8-12天的错题',
+      '完成一套综合测试题（无穷级数部分，限时1.5小时）',
+      '全书三章（10,11,12）知识框架梳理，完成A3纸思维导图',
+      '整理所有重要公式到一张A4纸（考试速查卡）',
+      '做一套完整的模拟卷（涵盖三章，限时3小时）',
+      '🎉 恭喜完成14天学习计划！考前再翻一遍公式卡和错题本。'
+    ],
+    hours: 4,
+    problemCount: 8,
+    aiPrompt: '请出一套完整的高数下期末模拟卷（重积分+曲线曲面积分+无穷级数，共8道大题）：涵盖二重积分、三重积分、曲线积分、格林公式、曲面积分、高斯公式、幂级数、傅里叶级数各1道。限时3小时。附带详细答案和评分标准。'
+  }
+];
+
+// 全书目录
+const TOC = [
+  { ch: '第八章', title: '向量代数与空间解析几何', sections: ['§8.1 向量及其线性运算', '§8.2 数量积·向量积·混合积', '§8.3 平面及其方程', '§8.4 空间直线及其方程', '§8.5 曲面及其方程', '§8.6 空间曲线及其方程'], skipped: true },
+  { ch: '第九章', title: '多元函数微分学', sections: ['§9.1 多元函数的基本概念', '§9.2 偏导数', '§9.3 全微分', '§9.4 多元复合函数的求导法则', '§9.5 隐函数的求导公式', '§9.6 多元函数微分学的几何应用', '§9.7 方向导数与梯度', '§9.8 多元函数的极值及其求法'], skipped: true },
+  { ch: '第十章', title: '重积分', sections: ['§10.1 二重积分的概念与性质', '§10.2 二重积分的计算法', '§10.3 三重积分', '§10.4 重积分的应用', '总习题十'], skipped: false },
+  { ch: '第十一章', title: '曲线积分与曲面积分', sections: ['§11.1 对弧长的曲线积分', '§11.2 对坐标的曲线积分', '§11.3 格林公式及其应用', '§11.4 曲线积分与路径无关的条件', '§11.5 对面积的曲面积分', '§11.6 对坐标的曲面积分', '§11.7 高斯公式与散度', '§11.8 斯托克斯公式与旋度', '总习题十一'], skipped: false },
+  { ch: '第十二章', title: '无穷级数', sections: ['§12.1 常数项级数的概念与性质', '§12.2 常数项级数的审敛法', '§12.3 幂级数', '§12.4 函数展开成幂级数', '§12.5 幂级数的应用', '§12.6 傅里叶级数', '§12.7 正弦级数与余弦级数', '§12.8 一般周期的傅里叶级数', '总习题十二'], skipped: false },
+];
+
+// 进度数据 (localStorage key)
+const STORAGE_KEY = 'gaoshu_study_progress_v2';
+let checkedTasks = {};    // { "day-tIdx": true }
+let doneDays = {};        // { "1": true }
+
+/* ================================================================
+   初始化
+   ================================================================ */
+function init() {
+  loadProgress();
+  renderCalendar();
+  renderStats();
+  updateProgress();
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      checkedTasks = d.checkedTasks || {};
+      doneDays = d.doneDays || {};
+    }
+  } catch(e) { /* ignore */ }
+}
+
+function saveProgress() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ checkedTasks, doneDays }));
+}
+
+/* ================================================================
+   日历渲染
+   ================================================================ */
+function renderCalendar() {
+  const grid = document.getElementById('daysGrid');
+  const today = new Date();
+  const startDate = new Date(2026, 5, 11); // June 11, 2026 = Day 1
+
+  // 计算日历显示的起始日 (包含Day 1)
+  // Day 1 = June 11, 2026 = Thursday
+  // 我们以周为单位显示，从Day 1所在周的周一开始
+  const day1WeekDay = startDate.getDay(); // 0=Sun, ... 5=Thu → 4
+  const mondayOffset = day1WeekDay === 0 ? -6 : 1 - day1WeekDay; // offset from Day1 to Monday
+  const calStart = new Date(startDate);
+  calStart.setDate(calStart.getDate() + mondayOffset);
+
+  // 总共显示足够容纳14天的日历格子
+  const totalCells = 28; // 4 weeks
+  let html = '';
+
+  for (let i = 0; i < totalCells; i++) {
+    const d = new Date(calStart);
+    d.setDate(d.getDate() + i);
+
+    const dateStr = d.toISOString().split('T')[0];
+    const dayNum = d.getDate();
+
+    // 判断这个日期是否在学习计划内
+    const planDay = getPlanDay(dateStr);
+
+    if (planDay === null) {
+      html += `<div class="day-cell empty"><div class="day-num">${dayNum}</div></div>`;
+    } else {
+      let cls = 'day-cell';
+      if (dateStr === today.toISOString().split('T')[0]) cls += ' today';
+      if (doneDays[planDay.day]) cls += ' done';
+      if (selectedDay === planDay.day) cls += ' selected';
+
+      const monthLabel = (d.getMonth() + 1) + '/' + d.getDate();
+      html += `
+        <div class="${cls}" onclick="selectDay(${planDay.day})" title="第${planDay.day}天: ${planDay.title}">
+          <div class="day-num">${planDay.day}</div>
+          <div class="day-date">${monthLabel}</div>
+          <div class="day-label">${planDay.title.split('（')[0].slice(0,6)}</div>
+        </div>`;
+    }
+  }
+
+  grid.innerHTML = html;
+}
+
+function getPlanDay(dateStr) {
+  // 计算dateStr对应的是计划的第几天
+  const start = new Date(2026, 5, 11); // June 11, 2026
+  const target = new Date(dateStr + 'T00:00:00');
+  const diffDays = Math.round((target - start) / (1000 * 60 * 60 * 24));
+  if (diffDays >= 0 && diffDays < 14) {
+    return STUDY_PLAN[diffDays];
+  }
+  return null;
+}
+
+/* ================================================================
+   日期选择 & 详情展示
+   ================================================================ */
+let selectedDay = null;
+
+function selectDay(dayNum) {
+  selectedDay = dayNum;
+  const plan = STUDY_PLAN[dayNum - 1];
+
+  document.getElementById('detailTitle').textContent = `第 ${dayNum} 天`;
+  document.getElementById('detailDate').textContent = `2026年6月${10 + dayNum}日 · ${plan.chapter}`;
+  document.getElementById('detailActions').style.display = 'flex';
+
+  // 更新打卡按钮
+  const btnCheckin = document.getElementById('btnCheckin');
+  if (doneDays[dayNum]) {
+    btnCheckin.textContent = '✅ 已完成打卡（点击取消）';
+    btnCheckin.className = 'btn btn-outline';
+  } else {
+    btnCheckin.textContent = '✅ 完成打卡';
+    btnCheckin.className = 'btn btn-success';
+  }
+
+  // 渲染详情
+  let bodyHTML = '';
+
+  // 章节标签
+  bodyHTML += `<div style="margin-bottom:12px">`;
+  plan.sections.forEach(s => {
+    bodyHTML += `<span class="topic-tag">${s}</span>`;
+  });
+  bodyHTML += `</div>`;
+
+  // 任务卡片
+  bodyHTML += `<div class="section-card">
+    <h4>📋 今日任务 (预计 ${plan.hours} 小时)</h4>
+    <ul class="task-list">`;
+  plan.tasks.forEach((t, i) => {
+    const taskKey = `${dayNum}-${i}`;
+    const done = checkedTasks[taskKey];
+    bodyHTML += `
+      <li class="${done ? 'done' : ''}" onclick="toggleTask(${dayNum}, ${i})">
+        <span class="check">${done ? '✓' : ''}</span>
+        <span>${t}</span>
+      </li>`;
+  });
+  bodyHTML += `</ul></div>`;
+
+  // AI提示
+  bodyHTML += `<div style="margin-top:12px;font-size:.78rem;color:var(--text2);text-align:center">
+    💡 点击下方「AI出题」可针对今日内容生成练习题目
+  </div>`;
+
+  document.getElementById('detailBody').innerHTML = bodyHTML;
+
+  // 更新AI生成按钮的data属性
+  document.getElementById('btnGenAI').setAttribute('data-day', dayNum);
+
+  renderCalendar(); // 刷新高亮
+  updateProgress();
+}
+
+function toggleTask(dayNum, taskIdx) {
+  const taskKey = `${dayNum}-${taskIdx}`;
+  if (checkedTasks[taskKey]) {
+    delete checkedTasks[taskKey];
+  } else {
+    checkedTasks[taskKey] = true;
+  }
+
+  // 检查是否所有任务完成 → 自动标记日期完成
+  const plan = STUDY_PLAN[dayNum - 1];
+  const allDone = plan.tasks.every((_, i) => checkedTasks[`${dayNum}-${i}`]);
+  if (allDone) {
+    doneDays[dayNum] = true;
+  } else {
+    delete doneDays[dayNum];
+  }
+
+  saveProgress();
+  selectDay(dayNum); // 刷新详情
+  updateProgress();
+}
+
+function toggleDayDone() {
+  if (!selectedDay) return;
+  if (doneDays[selectedDay]) {
+    delete doneDays[selectedDay];
+    // 同时清除任务
+    const plan = STUDY_PLAN[selectedDay - 1];
+    plan.tasks.forEach((_, i) => delete checkedTasks[`${selectedDay}-${i}`]);
+  } else {
+    doneDays[selectedDay] = true;
+    // 自动勾选所有任务
+    const plan = STUDY_PLAN[selectedDay - 1];
+    plan.tasks.forEach((_, i) => checkedTasks[`${selectedDay}-${i}`] = true);
+  }
+  saveProgress();
+  selectDay(selectedDay);
+  updateProgress();
+}
+
+/* ================================================================
+   进度统计
+   ================================================================ */
+function updateProgress() {
+  const doneCount = Object.keys(doneDays).length;
+  const pct = Math.round(doneCount / 14 * 100);
+
+  document.getElementById('doneCount').textContent = doneCount;
+  document.getElementById('progressPct').textContent = pct + '%';
+
+  // 进度环
+  const circ = document.getElementById('progressCircle');
+  const total = 150.8; // 2π × 24 ≈ 150.8
+  const offset = total - (total * pct / 100);
+  circ.setAttribute('stroke-dashoffset', offset);
+
+  // 当前阶段
+  let phase = '';
+  if (doneCount === 0) phase = '🚀 准备开始';
+  else if (doneCount <= 3) phase = '📐 重积分阶段';
+  else if (doneCount <= 7) phase = '🔗 曲线曲面积分阶段';
+  else if (doneCount <= 12) phase = '♾️ 无穷级数阶段';
+  else if (doneCount < 14) phase = '📝 综合复习阶段';
+  else phase = '🎉 全部完成！';
+
+  document.getElementById('currentPhase').textContent = phase;
+
+  renderStats();
+}
+
+function renderStats() {
+  const doneCount = Object.keys(doneDays).length;
+
+  // 累计知识点
+  let topics = 0, hours = 0, problems = 0;
+  Object.keys(doneDays).forEach(d => {
+    const plan = STUDY_PLAN[parseInt(d) - 1];
+    if (plan) {
+      topics += plan.sections.length;
+      hours += plan.hours;
+      problems += plan.problemCount;
+    }
+  });
+
+  document.getElementById('statTopics').textContent = topics;
+  document.getElementById('statHours').textContent = hours;
+  document.getElementById('statProblems').textContent = problems;
+
+  // 连续打卡天数
+  let streak = 0;
+  for (let i = 14; i >= 1; i--) {
+    if (doneDays[i]) streak++;
+    else break;
+  }
+  document.getElementById('statStreak').textContent = streak;
+}
+
+function resetAll() {
+  if (confirm('确定要重置所有学习进度吗？此操作不可恢复。')) {
+    checkedTasks = {};
+    doneDays = {};
+    selectedDay = null;
+    saveProgress();
+    document.getElementById('detailTitle').textContent = '👈 点击日历中的日期';
+    document.getElementById('detailDate').textContent = '';
+    document.getElementById('detailBody').innerHTML = '<div class="detail-empty"><div class="icon">📋</div><p>点击左侧日历中的某一天<br>查看该天的学习任务和进度</p></div>';
+    document.getElementById('detailActions').style.display = 'none';
+    renderCalendar();
+    updateProgress();
+  }
+}
+
+/* ================================================================
+   AI 题目生成
+   ================================================================ */
+function generatePrompt() {
+  const chapter = document.getElementById('aiChapter').value;
+  const difficulty = document.getElementById('aiDifficulty').value;
+  const count = document.getElementById('aiCount').value;
+  const plan = STUDY_PLAN.find(p => p.aiPrompt && p.sections.some(s => s.includes(chapter.split(' ')[0].replace('ch','').replace('_','.'))));
+
+  // 构建系统级prompt
+  const diffMap = { easy: '基础概念与公式直接应用', medium: '考研基础难度', hard: '考研压轴题难度' };
+  const diffCN = diffMap[difficulty];
+
+  let sectionPrompt = '';
+  // 根据章节选择生成对应prompt
+  const planIdx = chapter.startsWith('ch10') ? Math.min(2, parseInt(chapter.split('_')[1]) - 1) :
+                   chapter.startsWith('ch11') ? 3 + Math.min(3, parseInt(chapter.split('_')[1]) - 1) :
+                   8 + Math.min(3, parseInt(chapter.split('_')[1]) - 1);
+
+  // Use the plan's aiPrompt if available, otherwise generate a generic one
+  const sel = document.getElementById('aiChapter');
+  const selText = sel.options[sel.selectedIndex].text;
+
+  const prompt = `你是一位大学高等数学教授，精通同济大学《高等数学》教材。
+
+请根据以下要求生成练习题：
+
+📖 章节：${selText}
+📊 难度：${diffCN}
+📝 题目数量：${count} 道
+
+要求：
+1. 每道题应当具有代表性，覆盖该章节的核心知识点
+2. 难度逐渐递增（从基础到进阶）
+3. 每道题需要包含：(a) 题目描述 (b) 详细解答过程 (c) 涉及的知识点标注 (d) 易错点提醒
+4. 使用中文出题，数学公式使用 LaTeX 格式（用 $$ 或 $ 包裹）
+5. 如果章节涉及计算题，确保数据设计合理、结果简洁
+
+请开始出题。`;
+
+  document.getElementById('promptText').textContent = prompt;
+  document.getElementById('promptOutput').style.display = 'block';
+  document.getElementById('promptOutput').scrollIntoView({ behavior: 'smooth' });
+}
+
+function genAIForDay() {
+  const dayNum = parseInt(document.getElementById('btnGenAI').getAttribute('data-day'));
+  if (!dayNum) return;
+  const plan = STUDY_PLAN[dayNum - 1];
+  if (!plan) return;
+
+  document.getElementById('promptText').textContent = `你是一位大学高等数学教授，精通同济大学《高等数学》教材。
+
+我目前在学习：${plan.title}
+所属章节：${plan.chapter}
+涉及小节：${plan.sections.join('、')}
+
+请针对以上内容生成 3 道练习题（难度：中等，考研基础题水平），每道题需包含：
+1. 题目描述
+2. 详细解答过程
+3. 涉及的知识点
+4. 常见错误提醒
+
+请开始出题。`;
+  document.getElementById('promptOutput').style.display = 'block';
+  document.getElementById('promptOutput').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('copyToast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  });
+}
+
+/* ================================================================
+   全书目录 Modal
+   ================================================================ */
+function showTOC() {
+  const list = document.getElementById('tocList');
+  let html = '';
+  TOC.forEach(ch => {
+    const badge = ch.skipped ? '<span style="background:#f1f5f9;color:#94a3b8;font-size:.7rem;padding:2px 6px;border-radius:4px;margin-left:6px">前置章节（不在本计划内）</span>' : '';
+    html += `<li><strong>${ch.ch} ${ch.title}</strong>${badge}`;
+    if (!ch.skipped) {
+      html += '<ul class="toc-sub">';
+      ch.sections.forEach(s => {
+        html += `<li>${s}</li>`;
+      });
+      html += '</ul>';
+    }
+    html += '</li>';
+  });
+  list.innerHTML = html;
+  document.getElementById('tocOverlay').classList.add('show');
+}
+
+function closeTOC() {
+  document.getElementById('tocOverlay').classList.remove('show');
+}
+
+document.getElementById('tocOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeTOC();
+});
+
+// 键盘快捷键
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeTOC();
+  if (e.ctrlKey && e.key === 'g') {
+    e.preventDefault();
+    document.getElementById('aiPanel').scrollIntoView({ behavior: 'smooth' });
+  }
+});
+
+// 初始化
+init();
+</script>
+</body>
+</html>
